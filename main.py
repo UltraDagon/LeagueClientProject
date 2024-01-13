@@ -1,4 +1,5 @@
 import tkinter as tk
+import tkinter.font
 import random
 import certifi
 import urllib3
@@ -17,21 +18,38 @@ class App():
         }
         self.url = None
 
+        self.fonts = {}
+
         self.root = tk.Tk()
+        self.focus = None
+
+        self.fonts['default'] = tk.font.Font(family="SpiegelSans Trial",
+                                             size=12)
+        self.fonts['small'] = tk.font.Font(family="SpiegelSans Trial",
+                                             size=10)
 
         self.root.geometry("1280x720")
         self.root.title("Ultra_Dagon's League Client Project")
+        self.root.bind("<Button-1>", self.on_click)
 
         self.social = tk.Frame(self.root, bg="#9999cc")
 
-        self.username = tk.Label(self.social, text="%username", font=('Arial, 18'))
-        self.username.pack()
+        self.icon_uname_status = tk.Frame(self.social, height=80, width=224, bg="#9999cc")
 
-        self.status = tk.Entry(self.social, font=('Arial, 18'))
-        self.status.pack()
+        self.icon_display = tk.Canvas(self.icon_uname_status, bg="red", height=66, width=61)
+        self.icon_display.bind("<Button-1>", self.open_customize_identity)
+        self.icon_display.place(x=9, y=6)
 
-        self.set_status = tk.Button(self.social, text="Set Status", font=('Arial, 18'), command=self.change_status)
-        self.set_status.pack()
+        self.username = tk.Label(self.icon_uname_status, text="%username", font=('SpiegalSans, 12'), bg="#9999cc")
+        self.username.place(relx=0.4,rely=0.35)
+
+        self.status = tk.Entry(self.icon_uname_status, width=12, font=self.fonts['small'], bg="#9999cc")
+        self.status.place(relx=0.4,rely=0.625)
+
+        self.icon_uname_status.pack(fill=tk.X)
+
+        self.friends = tk.Label(self.social, text="Friend 1\nFriend 2\nFriend 3\nFriend 4\nFriend 5", font=('Arial, 18'), bg="#9999cc")
+        self.friends.pack()
 
         self.social.pack(side=tk.RIGHT, fill=tk.Y)
 
@@ -45,11 +63,12 @@ class App():
 
         self.navigation_bar.pack(side=tk.TOP, fill=tk.X)
 
-        #self.connect_button = tk.Button(self.root, text="Connect", font=('Arial, 60'), command=lambda: [self.connect, self.connect_button.place_forget])
-        #self.connect_button.place(relx=0.3, rely=0.3, relheight=.4, relwidth=.4)
         self.connect()
         self.load_fields()
         self.root.mainloop()
+
+    def open_customize_identity(self, event):
+        self.customize_identity = tk.Toplevel()
 
     def connect(self):
         process = None
@@ -74,7 +93,9 @@ class App():
         print(self.request('get', '/lol-summoner/v1/current-summoner/summoner-profile'))
 
     def load_fields(self):
-        self.status.insert(0,self.request('get', '/lol-chat/v1/me').json()['statusMessage'])
+        print(self.request('get', '/lol-chat/v1/me').json())
+        self.username.config(text=self.request('get', '/lol-chat/v1/me').json()['gameName'])
+        self.status.insert(tk.END,self.request('get', '/lol-chat/v1/me').json()['statusMessage'])
 
     def request(self, method: str, endpoint: str, **kwargs):
         url = self.url
@@ -87,8 +108,19 @@ class App():
         return self.session.request(method, f'{url}{endpoint}', verify=False, **kwargs)
 
     def change_status(self):
-        print(self.status.get())
+        print(f'Setting status to: {self.status.get()}')
         print(self.request('put', '/lol-chat/v1/me', data={'statusMessage': self.status.get()}))
+
+    def on_click(self, event):
+        if self.focus == self.root.focus_get():
+            self.root.focus_set()
+        if self.focus != self.root.focus_get() and str(self.focus) != '.':
+            self.unfocus(self.focus)
+        self.focus = self.root.focus_get()
+
+    def unfocus(self, widget):
+        if widget == self.status:
+            self.change_status()
 
 urllib3.disable_warnings() # Not sure if I should get certification or not
 App()
