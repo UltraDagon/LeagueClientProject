@@ -17,6 +17,8 @@ class App():
             'Accept': 'application/json'
         }
         self.url = None
+        self.clicked = None
+        self.popups = []
 
         self.fonts = {}
 
@@ -68,7 +70,13 @@ class App():
         self.root.mainloop()
 
     def open_customize_identity(self, event):
-        self.customize_identity = tk.Toplevel()
+        self.customize_identity = tk.Frame(self.root, bg="#003366")
+        self.customize_identity.place(x=160, y=80, width=960, height=560)
+
+        self.customize_identity.bind("<Button-1>", self.click_popup)
+        self.click_popup((self.customize_identity))
+
+        self.popups.append(self.customize_identity)
 
     def connect(self):
         process = None
@@ -90,10 +98,9 @@ class App():
         self.session.auth = ('riot', process_args['remoting-auth-token'])
         self.url = f"https://127.0.0.1:{int(process_args['app-port'])}"
 
-        print(self.request('get', '/lol-summoner/v1/current-summoner/summoner-profile'))
+        print(self.request('get', '/lol-summoner/v2/summoner-names').json())
 
     def load_fields(self):
-        print(self.request('get', '/lol-chat/v1/me').json())
         self.username.config(text=self.request('get', '/lol-chat/v1/me').json()['gameName'])
         self.status.insert(tk.END,self.request('get', '/lol-chat/v1/me').json()['statusMessage'])
 
@@ -115,12 +122,23 @@ class App():
         if self.focus == self.root.focus_get():
             self.root.focus_set()
         if self.focus != self.root.focus_get() and str(self.focus) != '.':
-            self.unfocus(self.focus)
+            self.change_status()
         self.focus = self.root.focus_get()
 
-    def unfocus(self, widget):
-        if widget == self.status:
-            self.change_status()
+        print(event)
+        print(self.clicked)
+        print()
+        if (self.clicked is None):
+            self.close_popups()
+        self.clicked = None
+
+    def click_popup(self, event):
+        self.clicked = event
+
+    def close_popups(self):
+        for p in self.popups:
+            p.place_forget()
+
 
 urllib3.disable_warnings() # Not sure if I should get certification or not
 App()
